@@ -205,3 +205,19 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ROS2 / workspace-specific additions
+build/
+install/
+log/
+.colcon/
+*.db3
+*.yaml
+*.rviz
+*.launch.py
+.vscode/
+.idea/
+test_results/
+pytest_cache/
+coverage/
+
