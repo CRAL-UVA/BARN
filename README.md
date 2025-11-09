@@ -51,7 +51,7 @@ At each planning cycle, the node:
 cd ~/ros2_ws/src
 git clone git@github.com:CRAL-UVA/BARN.git
 cd ~/ros2_ws
-colcon build --packages-select jackal_freetube_planner
+colcon build 
 source install/setup.bash
 ```
 
@@ -70,7 +70,7 @@ ros2 run jackal_freetube_planner fixed_granular_ros2 \
   -p warning_pad:=0.05 \
   -p max_v:=0.1 \
   -p velocity_layers:="[0.03, 0.06, 0.1]" \
-  -p max_w:=0.
+  -p max_w:=0.6
   ```
 
 In RViz, add topic `/motion_tubes` of type MarkerArray to visualize tubes.
