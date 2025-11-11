@@ -92,3 +92,21 @@ tubes — total number of generated candidate tubes
 feas — number of feasible (collision-free) tubes
 
 fwd — current forward clearance in meters
+
+## 6. Simulation
+
+During simulation, the robot (Clearpath Jackal) navigates through cluttered corridors and unstructured layouts using dynamically generated motion tubes.
+<img width="1440" height="436" alt="image" src="https://github.com/user-attachments/assets/de816ecc-a16d-4f62-8c4c-e841898a4b6d" />
+
+<img width="1453" height="439" alt="image" src="https://github.com/user-attachments/assets/de18bfda-68cc-4427-9e6b-d9d99d07c862" />
+
+Below shows the **Motion Tube Visualization** in RViz.  
+Each colored arc represents a simulated feasible path segment (“tube”) evaluated by the planner.  
+- 🟩 Green: feasible tubes  
+- 🟥 Red: infeasible or collision-risk tubes  
+- 🟦 Cyan: selected trajectory for execution  
+
+<img width="803" height="416" alt="image" src="https://github.com/user-attachments/assets/1f847587-8755-44c1-97e1-aa247799e65d" />
+
+
+
