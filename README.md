@@ -524,18 +524,17 @@ No additional network or TF setup is required (assuming the driver is already ru
 The planner periodically prints diagnostics (every 3 seconds), for example:
 
 ```text
-[INFO] [planner]: tubes=150 feas=97 fwd=2.14m
+[INFO] [1775421483.600019833] [goal_oriented_motion_tube_planner_ros2_grouped_no_prune]: === DIAG === tubes=0 feas=0 scan_age=0.015 locked_w=None w_hold_left=0.00 turn_sign=0 turn_hold_left=0.00 recent=0
+
+[INFO] [1775422285.459940042] [goal_oriented_motion_tube_planner_ros2_grouped_no_prune]: === DIAG === tubes=135 feas=83 scan_age=0.045 locked_w=0.9 w_hold_left=0.96 turn_sign=1 turn_hold_left=1.81 recent=34
 ```
 
-Where:
+## 8. Rviz
+<img width="470" height="342" alt="image" src="https://github.com/user-attachments/assets/83c9699f-6e35-4959-9dad-b88438f5f15e" />
 
-tubes — total number of generated candidate tubes
+MarkerArray topic : /j100_0896/motion_tubes 
 
-feas — number of feasible (collision-free) tubes
-
-fwd — current forward clearance in meters
-
-## 8. Simulation
+## 9. Simulation
 
 During simulation, the robot (Clearpath Jackal) navigates through cluttered corridors and unstructured layouts using dynamically generated motion tubes.
 <img width="1440" height="436" alt="image" src="https://github.com/user-attachments/assets/de816ecc-a16d-4f62-8c4c-e841898a4b6d" />
