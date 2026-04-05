@@ -1,3 +1,24 @@
+# Motion Tube Planner (ROS2)
+
+## 1. Introduction
+
+The **Motion Tube Planner** is a local navigation planner for the Clearpath Jackal that selects a short-horizon motion command by generating many candidate trajectories (“motion tubes”), checking their collision feasibility against the latest laser scan, scoring them with a composite cost function, and executing the best one.
+
+Instead of optimizing over a continuous control space online, the planner evaluates a structured set of preconfigured motion tubes with different angular velocities `w` and time horizons `T`. This makes the planner easy to tune, fast enough for real-time execution, and interpretable during debugging.
+
+In the current ROS2 implementation, the planner:
+- subscribes to **LaserScan** and **Odometry**,
+- exposes a **NavigateToPose** action server,
+- continuously generates and evaluates candidate motion tubes,
+- publishes the selected command as **Twist**,
+- visualizes all tubes in **RViz** using `MarkerArray`.
+
+This implementation is built around grouped tube templates, collision checking with half-width safety reasoning, goal-progress scoring, turn-commit logic, and revisit suppression.
+
+---
+
+
+
 # BARN
 
 This repository provides the **Jackal FreeTube Planner**, a lightweight ROS 2-based motion planner designed for dynamic and unstructured environments.
