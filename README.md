@@ -56,10 +56,13 @@ At every planning cycle, the node performs the following steps:
    - opposite-turn suppression during turn commitment.
      
 8. **Select the best tube**  
-   The planner applies group priority, angular-velocity holding, and turn-commit logic before choosing the final tube.
+   The planner applies active-group logic, angular-velocity holding, turn-commit logic, and green-opposite selection before choosing the final tube.
 
 9. **Publish command and visualization**  
    The selected tube is converted into `cmd_vel`, and all tubes are published to RViz as markers.
+
+10. **Enter recovery if no feasible tube exists**  
+   If no feasible tube is available for a sustained duration, the planner enters a VFH-based recovery mode to search for free space and then rechecks motion tubes.
 
 ---
 
@@ -109,17 +112,13 @@ Before creating a tube, the planner filters out overly long, nearly straight tub
 
 ### 2.3 Collision checking
 
-Collision checking is done in `collision_check_halfwidth_hard()`.
+The current implementation uses sweeping-style collision checking. Instead of checking only the tube centerline, the planner samples swept robot boundary points along each tube and maps them to laser beams.
 
-#### Core idea
-For several sampled points along the tube, the planner:
-1. computes the distance from the robot origin to the sample point,
-2. maps that direction to the corresponding laser beam index,
-3. expands to a beam fan using the robot half-width,
-4. checks whether laser ranges minus travel distance minus robot half-width remain positive.
-
-The effective safety radius used here is:
-- `eff_r = robot.half_width`
+For each sampled point, the planner:
+1. computes the distance from the robot origin to the sampled boundary point,
+2. maps that point to the corresponding laser beam,
+3. compares the laser range with the sample distance,
+4. estimates minimum clearance, left clearance, right clearance, and center balance.
 
 The planner records:
 - `min_clearance`
@@ -127,11 +126,14 @@ The planner records:
 - `right_clearance`
 - `center_balance`
 
-#### Feasibility rule
-If any local clearance becomes negative, the tube is marked infeasible immediately.
+If any sampled point has negative clearance, the tube is marked infeasible.
 
-This method is efficient because it uses pre-associated beam indices per sample and checks only a local fan around each trajectory point.
-
+Important parameters:
+- `sweep_sample_dist`
+- `sweep_aug_dist`
+- `sweep_extra_margin`
+- `clearance_safe_dist`
+- `side_clearance_safe_dist`
 ---
 
 ### 2.4 Goal progress calculation
@@ -193,6 +195,21 @@ If the planner has committed to turning left or right, tubes with the opposite s
 #### Fixed-speed filtering
 The final selection currently filters feasible tubes so only tubes with `v == fixed_speed` are considered.
 
+#### Green-opposite selection
+
+The current implementation includes a green-opposite selection strategy.
+
+Instead of always selecting only the global minimum-cost tube, the planner first collects a set of low-cost feasible tubes, called “green” candidates. The parameter `green_cost_ratio` controls how wide this low-cost candidate range is.
+
+This was added because the Jackal sometimes turns too close to walls or obstacle boundaries. By expanding the low-cost candidate set and selecting a safer tube within that range, the planner can avoid edge-scraping behavior during turns.
+
+In the current tuning:
+-p enable_green_center_selection:=true
+-p green_cost_ratio:=0.3
+-p green_center_min_candidates:=2
+
+green_cost_ratio:=0.3 means the planner does not only consider the single best-cost tube. Instead, it allows a wider group of low-cost tubes and selects a safer tube from that group to improve side clearance.
+
 ---
 
 ### 2.7 Command publishing
@@ -226,6 +243,26 @@ This makes it easy to debug:
 - which tubes were rejected,
 - which tube won,
 - how the cost landscape changes around obstacles.
+
+### 2.9 Recovery behavior
+
+If no feasible motion tube exists for a sustained duration, the planner enters recovery mode.
+
+The current recovery system uses a VFH-based free-space search.
+
+VFH, or Vector Field Histogram, is a classical obstacle-avoidance method. It converts laser scan data into an obstacle-density histogram, identifies free-space valleys, and selects a safe direction for the robot to rotate toward.
+
+In this planner, VFH is used only during recovery. The recovery process is:
+
+1. detect that no feasible tube exists,
+2. build a histogram from the laser scan,
+3. find open free-space valleys,
+4. choose a recovery heading,
+5. rotate toward that heading,
+6. regenerate and re-evaluate motion tubes,
+7. exit recovery once feasible representative tubes become available.
+
+If VFH cannot find a good direction, the planner falls back to a fixed-angle scan behavior.
 
 ---
 
@@ -348,17 +385,31 @@ ros2 topic echo /j100_0896/platform/odom
 
 ### 5.2 Launch the Motion Tube Planner
 
-Use the command you provided:
+Current tuned command:
 
 ```bash
 ros2 run jackal_freetube_planner fixed_granular_ros2 --ros-args \
+  -p vfh_recovery_threshold:=3.0 \
+  -p vfh_recovery_min_valley_width:=2 \
+  -p vfh_recovery_wide_valley_min:=3 \
+  -p vfh_recovery_smooth_width:=1 \
+  -p vfh_recovery_sector_count:=120 \
   -p scan_topic:=/scan \
   -p odom_topic:=/j100_0896/platform/odom \
   -p cmd_topic:=/j100_0896/platform/cmd_vel_unstamped \
-  -p marker_topic:=/j100_0896/motion_tubes \
-  -p base_to_laser_yaw:=0.0 \
-  -p w_hold_time:=3.0 \
-  -p w_sample_step:=0.05
+  -p sweep_aug_dist:=0.01 \
+  -p sweep_extra_margin:=0.01 \
+  -p clearance_safe_dist:=0.02 \
+  -p side_clearance_safe_dist:=0.04 \
+  -p vfh_recovery_front_bias:=0.15 \
+  -p vfh_recovery_retry_turn_deg:=35.0 \
+  -p sweep_sample_dist:=0.03 \
+  -p w_side_clearance:=10.0 \
+  -p tube_obstacle_proximity_dist:=0.10 \
+  -p w_tube_obstacle_proximity:=0.0 \
+  -p enable_green_center_selection:=true \
+  -p green_cost_ratio:=0.3 \
+  -p green_center_min_candidates:=2
 ```
 
 ### 5.3 What this command means
